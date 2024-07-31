@@ -20,14 +20,42 @@ for year in years:
     crash_df = pd.read_csv(crash_file)
     units_df = pd.read_csv(units_file)
 
+    units_df.rename(
+        columns={
+            "Sex": "Unit Sex",
+            "Age": "Unit Age",
+            "Postcode": "Unit Postcode",
+            "Unit No": "UND_UNIT_NUMBER",
+        },
+        inplace=True,
+    )
+
     merged_df = pd.merge(crash_df, units_df, on="REPORT_ID", how="left")
     merged_df = pd.merge(
         merged_df,
         casualty_df,
-        left_on=["REPORT_ID", "Unit No"],
-        right_on=["REPORT_ID", "UND_UNIT_NUMBER"],
+        on=["REPORT_ID", "UND_UNIT_NUMBER"],
         how="left",
     )
+
+    merged_df = merged_df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+    merged_df["Veh Reg State"].fillna("UNKNOWN", inplace=True)
+    merged_df["Lic State"].fillna("UNKNOWN", inplace=True)
+    merged_df["Veh Year"].fillna(9999, inplace=True)
+    merged_df["Veh Year"].replace(["", "XXXX"], 9999, inplace=True)
+    merged_df["Unit Age"].fillna(-1, inplace=True)
+    merged_df["Unit Age"].replace(["", "XXX"], -1, inplace=True)
+    merged_df["AGE"].replace(["", "XX", "XXX"], -1, inplace=True)
+    merged_df["Licence Class"].fillna("Unknown", inplace=True)
+    merged_df["Licence Type"].fillna("Unknown", inplace=True)
+    merged_df["Towing"].fillna("Unknown", inplace=True)
+    merged_df["Unit Postcode"].fillna(9999, inplace=True)
+    merged_df["Unit Postcode"].replace(["XXX", "XXXX"], 9999, inplace=True)
+    merged_df["Number Occupants"].fillna(-1, inplace=True)
+    merged_df["Number Occupants"].replace(["XXX", "XXXX"], -1, inplace=True)
+    merged_df["Licence Class"].replace(["XX"], "Unknown", inplace=True)
+
     all_data.append(merged_df)
 
 final_df = pd.concat(all_data, ignore_index=True)
